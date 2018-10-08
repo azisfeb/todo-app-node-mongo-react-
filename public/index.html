@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Node/Angular</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <style>
+        html                    { overflow-y:scroll; }
+        body                    { padding-top:50px; }
+        #todo-list              { margin-bottom:30px; }
+		#todo-form 	 			{ margin-bottom:50px; }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+        <div id="todos"></div>
+    </div>
+
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/react@16/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js" crossorigin></script>  
+
+    <script type="text/babel">
+        class Todol extends React.Component{
+            constructor(){
+                super()
+                this.state = {
+                    data: [],
+                    newTodo: ""
+                }
+
+                this.todoValue    = this.todoValue.bind(this)
+                this.handleSubmit = this.handleSubmit.bind(this)
+                this.deleteMe     = this.deleteMe.bind(this)
+            }
+
+            componentDidMount(){
+                fetch('/api/todos')
+                .then((data) => {
+                    return data.json()
+                })
+                .then((json) => {
+                    this.setState({
+                        data: json
+                    })
+                })
+            }
+
+            todoValue(e){
+                this.setState({
+                    newTodo: e.target.value
+                })
+            }
+
+            deleteMe(e){
+                let id = e.target.value
+                fetch('/api/todos/'+id, {
+                    method: 'DELETE'
+                })
+                .then(() => {
+                    fetch('/api/todos')
+                    .then((data) => {
+                        return data.json()
+                    })
+                    .then((json) => {
+                        this.setState({
+                            data: json
+                        })
+                    })
+                })
+            }
+            
+            handleSubmit(e){
+                e.preventDefault()
+                let todoVal = this.state.newTodo
+                
+                fetch('/api/todos', {
+                    method: 'POST',
+                    headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      text: todoVal,
+                    })
+                  })
+                  .then(() => {
+                    fetch('/api/todos')
+                    .then((data) => {
+                        return data.json()
+                    })
+                    .then((json) => {
+                        this.setState({
+                            data: json,
+                            newTodo: ""
+                        })
+                    })
+                  })
+                
+            }
+
+            render(){
+
+                let todoList = this.state.data
+                todoList = todoList.map((todo, index) => {
+                    return(
+                        <div className="checkbox">
+                            <label>
+                                <input type="checkbox" onClick={this.deleteMe} value={todo._id}/><span key={index}>{todo.text}</span>
+                            </label>
+                        </div>
+                    )
+                })
+
+                return(
+                    <div>
+                        <div className="jumbotron text-center">
+                            <h1>I'am Todo-aholic <span className="label label-info">{this.state.data.length}</span></h1> 
+                        </div>
+                
+                        <div id="todo-list" className="row">
+                            <div className="col-sm-4 col-sm-offset-4">
+                                {todoList}
+                            </div>
+                        </div>
+                
+                        <div id="todo-form" className="row">
+                            <div className="col-sm-8 col-sm-offset-2 text-center">
+                
+                                <form onSubmit={this.handleSubmit}>
+                                    <div className="form-group">
+                                        <input type="text" className="form-controll input-lg text-center" onChange={this.todoValue} placeholder="type me..." value={this.state.newTodo}/>
+                                    </div>
+                                    <button type="submit" className="btn btn-primary btn-lg">Add</button>
+                                </form>
+                
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        }
+
+        ReactDOM.render(<Todol />, document.getElementById('todos'))
+    </script>
+
+</body>
+</html>
